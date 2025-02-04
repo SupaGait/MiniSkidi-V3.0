@@ -1,5 +1,6 @@
 #include <Ps3Controller.h>
-#include <ESP32Servo.h> // by Kevin Harrington
+#include <ESP32Servo.h>         // by Kevin Harrington
+#include "ESP32MotorControl.h"  // https://github.com/JoaoLopesF/ESP32MotorControl
 
 #define rightMotor0 25
 #define rightMotor1 26
@@ -9,6 +10,8 @@
 
 #define armMotor0 21
 #define armMotor1 19
+
+ESP32MotorControl armMotorControl = ESP32MotorControl();
 
 #define bucketServoPin  23
 #define clawServoPin 22
@@ -133,22 +136,27 @@ void notify()
     }
 
     int RYValue = (Ps3.data.analog.stick.ry);
-    if (RYValue > 115)
+    if (RYValue > 30)
     {
-      digitalWrite(armMotor0, LOW);
-      digitalWrite(armMotor1, HIGH);
+      int speed = min(RYValue-30, 50);
+      armMotorControl.motorForward(0, speed);
+      //digitalWrite(armMotor0, LOW);
+      //digitalWrite(armMotor1, HIGH);
       delay(10);
     }
-    if (RYValue < -115)
+    if (RYValue < -30)
     {
-      digitalWrite(armMotor0, HIGH);
-      digitalWrite(armMotor1, LOW);
+      int speed = min(-1*(RYValue+30), 50);
+      armMotorControl.motorReverse(0, speed);
+      //digitalWrite(armMotor0, HIGH);
+      //digitalWrite(armMotor1, LOW);
       delay(10);
     }
     if (RYValue > -30 && RYValue < 30)
     {
-      digitalWrite(armMotor0, LOW);
-      digitalWrite(armMotor1, LOW);
+      armMotorControl.motorStop(0);
+      //digitalWrite(armMotor0, LOW);
+      //digitalWrite(armMotor1, LOW);
     }
   }
   //------------- Digital shoulder button events -------------
@@ -324,9 +332,11 @@ void setup() {
 
   Serial.begin(115200);
 
+  armMotorControl.attachMotor(armMotor0, armMotor1);
+
   Ps3.attach(notify);
   Ps3.attachOnConnect(onConnect);
-  Ps3.begin("a0:5a:5a:a0:0f:98");
+  Ps3.begin("00:1A:80:A9:4F:DA");
 
   Serial.println("Ready.");
   
@@ -334,8 +344,8 @@ void setup() {
   pinMode(rightMotor1, OUTPUT);
   pinMode(leftMotor0, OUTPUT);
   pinMode(leftMotor1, OUTPUT);
-  pinMode(armMotor0, OUTPUT);
-  pinMode(armMotor1, OUTPUT);
+  //pinMode(armMotor0, OUTPUT);
+  //pinMode(armMotor1, OUTPUT);
 
   pinMode(auxLights0, OUTPUT);
   pinMode(auxLights1, OUTPUT);
